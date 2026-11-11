@@ -1,0 +1,70 @@
+{
+  "name": "@devopsnext/starterkit-badge-component",
+  "version": "0.1.0",
+  "description": "Obsidian design-system Badge — token-driven, CSS-styled, zero runtime dependencies.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist",
+    "styles.css",
+    "README.md"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc --noEmit && tsup",
+    "dev": "tsup --watch",
+    "sync:tokens": "node scripts/sync-tokens.mjs",
+    "sync:tokens:check": "node scripts/sync-tokens.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "pnpm sync:tokens:check && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "devDependencies": {
+    "@devopsnext/starterkit-theme": "file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz",
+    "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "axe-core": "^4.10.3",
+    "jsdom": "^26.1.0",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "react",
+    "badge",
+    "chip",
+    "status",
+    "design-system",
+    "obsidian"
+  ]
+}
