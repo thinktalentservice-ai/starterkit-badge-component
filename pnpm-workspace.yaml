@@ -2,3 +2,5 @@
 # esbuild ships a platform-specific binary and needs its postinstall to run.
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@devopsnext/starterkit-theme@1.5.0' # published 2026-11-11T19:32:27.202Z

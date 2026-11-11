@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@devopsnext/starterkit-theme':
-        specifier: file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz
-        version: file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        specifier: 1.5.0
+        version: 1.5.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       '@testing-library/dom':
         specifier: ^10.4.0
         version: 10.4.2
@@ -99,9 +99,8 @@ packages:
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
 
-  '@devopsnext/starterkit-theme@file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz':
-    resolution: {integrity: sha512-1IFLM4TpHZW4gO1u0F6xOkaRAcnwH8TOKMkboSevUCjmOdVzSMXCBlXpkKMtyQZT5rNQBUJWDAcyxtX/JNZ8Vw==, tarball: file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz}
-    version: 1.5.0
+  '@devopsnext/starterkit-theme@1.5.0':
+    resolution: {integrity: sha512-2TdPKVhuQvy2VXAU/A0Awv46vh3MhzZy77UZYaVV+VBEp6aCVWvaaBjF7n2bC88ePi4zmr8FThzzAVrpTPSAqA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@mui/material': '>=6'
@@ -1267,7 +1266,7 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.4': {}
 
-  '@devopsnext/starterkit-theme@file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
+  '@devopsnext/starterkit-theme@1.5.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)':
     optionalDependencies:
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)

@@ -1,6 +1,6 @@
 {
   "name": "@devopsnext/starterkit-badge-component",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Obsidian design-system Badge — token-driven, CSS-styled, zero runtime dependencies.",
   "license": "MIT",
   "type": "module",
@@ -41,7 +41,7 @@
     "react-dom": ">=18"
   },
   "devDependencies": {
-    "@devopsnext/starterkit-theme": "file:../starterkit-theme/devopsnext-starterkit-theme-1.5.0.tgz",
+    "@devopsnext/starterkit-theme": "1.5.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "^16.3.0",
