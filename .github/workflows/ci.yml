@@ -181,24 +181,28 @@ jobs:
 
       # ── npm tarball (release → npm) ────────────────────────────────────────
       # Packed here, from the build that just passed, so npm gets exactly this.
+      # Packed outside the workspace into a non-hidden dir: upload-artifact
+      # skips dot-folders (e.g. ".pack") by default.
       - name: Pack npm tarball
         if: inputs.release
         shell: bash
+        env:
+          PACK_DIR: ${{ runner.temp }}/npm-pack
         run: |
           set -euo pipefail
-          mkdir -p .pack
+          mkdir -p "$PACK_DIR"
           if [ "${{ steps.detect.outputs.pm }}" = pnpm ]; then
-            pnpm pack --pack-destination .pack
+            pnpm pack --pack-destination "$PACK_DIR"
           else
-            npm pack --pack-destination .pack
+            npm pack --pack-destination "$PACK_DIR"
           fi
-          ls -l .pack
+          ls -l "$PACK_DIR"
 
       - name: Upload npm tarball
         if: inputs.release
         uses: actions/upload-artifact@v7
         with:
           name: npm-package
-          path: .pack/*.tgz
+          path: ${{ runner.temp }}/npm-pack/*.tgz
           if-no-files-found: error
           retention-days: 7
