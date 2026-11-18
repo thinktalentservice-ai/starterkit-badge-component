@@ -157,5 +157,6 @@ jobs:
             echo "::notice::${NAME}@${VERSION} is already on npm — nothing to publish."
             exit 0
           fi
-          npm publish pkg/*.tgz --access public --provenance --tag "$DIST_TAG"
+          # Leading "./" is required: npm reads "pkg/x.tgz" as GitHub shorthand (owner/repo).
+          npm publish ./pkg/*.tgz --access public --provenance --tag "$DIST_TAG"
           echo "::notice::Published ${NAME}@${VERSION} (dist-tag: ${DIST_TAG})"
