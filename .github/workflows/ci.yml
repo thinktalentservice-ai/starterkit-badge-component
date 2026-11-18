@@ -1,0 +1,204 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# CI — build gate.
+#
+#  • push (any branch)      → build + test
+#  • pull_request           → build + test; the "Build" check is what branch
+#                             protection requires before a PR can be merged
+#  • workflow_call          → reused by release.yml so a release only ships
+#                             what passed this exact gate
+#
+# Project-agnostic: detects pnpm / npm / yarn from the lockfile and picks the
+# build command from package.json:
+#     "verify" script            → runs it (this repo: tokens check + typecheck + test + build)
+#     else "test" (if any) then "build"
+#     else vite.config.*         → vite build
+# ─────────────────────────────────────────────────────────────────────────────
+name: CI
+
+on:
+  push:
+    branches: ["**"] # branches only — release tags are handled by release.yml
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      release:
+        description: "Release mode: check tag == package.json version, pack the npm tarball, upload it"
+        type: boolean
+        default: false
+      storybook:
+        description: "Also build Storybook (if the project has a Storybook build script) and upload it"
+        type: boolean
+        default: false
+    outputs:
+      has-storybook:
+        description: "'true' when a Storybook build was produced and uploaded"
+        value: ${{ jobs.build.outputs.has_storybook }}
+      package-name:
+        value: ${{ jobs.build.outputs.package_name }}
+      package-version:
+        value: ${{ jobs.build.outputs.package_version }}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'push' || github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: "24"
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      has_storybook: ${{ steps.storybook.outputs.built }}
+      package_name: ${{ steps.detect.outputs.name }}
+      package_version: ${{ steps.detect.outputs.version }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Detect package manager and scripts
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+          if   [ -f pnpm-lock.yaml ]; then pm=pnpm
+          elif [ -f yarn.lock ];      then pm=yarn
+          else                             pm=npm
+          fi
+          echo "pm=$pm"                                                   >> "$GITHUB_OUTPUT"
+          echo "pinned=$(jq -r '.packageManager // empty' package.json)" >> "$GITHUB_OUTPUT"
+          echo "name=$(jq -r '.name' package.json)"                       >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r '.version' package.json)"                 >> "$GITHUB_OUTPUT"
+          echo "Package manager: $pm"
+
+      # pnpm: honour package.json "packageManager" when present, else pnpm 12.
+      - name: Setup pnpm (version from package.json)
+        if: steps.detect.outputs.pm == 'pnpm' && steps.detect.outputs.pinned != ''
+        uses: pnpm/action-setup@v6
+      - name: Setup pnpm (default version)
+        if: steps.detect.outputs.pm == 'pnpm' && steps.detect.outputs.pinned == ''
+        uses: pnpm/action-setup@v6
+        with:
+          version: 12
+
+      - name: Enable corepack (yarn)
+        if: steps.detect.outputs.pm == 'yarn'
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: ${{ steps.detect.outputs.pm }}
+
+      - name: Release — tag must match package.json version
+        if: inputs.release
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name || github.ref_name }}
+          VERSION: ${{ steps.detect.outputs.version }}
+        run: |
+          if [ "${TAG#v}" != "$VERSION" ]; then
+            echo "::error::Release tag '$TAG' does not match package.json version '$VERSION'. Bump the version (and commit) before releasing."
+            exit 1
+          fi
+          echo "Tag $TAG matches version $VERSION"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ steps.detect.outputs.pm }}" in
+            pnpm) pnpm install --frozen-lockfile ;;
+            npm)  npm ci ;;
+            yarn) if [ -f .yarnrc.yml ]; then yarn install --immutable; else yarn install --frozen-lockfile; fi ;;
+          esac
+
+      - name: Build & test
+        shell: bash
+        env:
+          PM: ${{ steps.detect.outputs.pm }}
+        run: |
+          set -euo pipefail
+          has() { jq -e --arg s "$1" '.scripts[$s] // empty' package.json > /dev/null; }
+          if has verify; then
+            echo "▶ $PM run verify"; "$PM" run verify
+          else
+            if has test; then echo "▶ $PM run test"; "$PM" run test; fi
+            if has build; then
+              echo "▶ $PM run build"; "$PM" run build
+            elif ls vite.config.* > /dev/null 2>&1; then
+              echo "▶ vite build"
+              if [ "$PM" = pnpm ]; then pnpm exec vite build; else npx --no-install vite build; fi
+            else
+              echo "::error::No 'verify' or 'build' script in package.json and no vite.config.* — nothing to build."
+              exit 1
+            fi
+          fi
+
+      # ── Storybook (release → GitHub Pages) ─────────────────────────────────
+      - name: Build Storybook
+        id: storybook
+        if: inputs.storybook
+        shell: bash
+        env:
+          PM: ${{ steps.detect.outputs.pm }}
+        run: |
+          set -euo pipefail
+          script=""
+          for s in build-storybook storybook:build build:storybook; do
+            if jq -e --arg s "$s" '.scripts[$s] // empty' package.json > /dev/null; then script="$s"; break; fi
+          done
+          if [ -z "$script" ]; then
+            echo "::warning::GitHub Pages is enabled but package.json has no Storybook build script (build-storybook / storybook:build / build:storybook). Skipping Pages deploy."
+            echo "built=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # Output dir: honour -o / --output-dir in the script, default storybook-static
+          cmd="$(jq -r --arg s "$script" '.scripts[$s]' package.json)"
+          out="$(sed -nE 's/.*(-o|--output-dir)[ =]+([^ ]+).*/\2/p' <<< "$cmd")"
+          out="${out:-storybook-static}"
+          echo "▶ $PM run $script  (output: $out)"
+          "$PM" run "$script"
+          [ -f "$out/index.html" ] || { echo "::error::Storybook output '$out/index.html' not found"; exit 1; }
+          echo "dir=$out"   >> "$GITHUB_OUTPUT"
+          echo "built=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Storybook
+        if: inputs.storybook && steps.storybook.outputs.built == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: storybook-static
+          path: ${{ steps.storybook.outputs.dir }}
+          include-hidden-files: true
+          retention-days: 7
+
+      # ── npm tarball (release → npm) ────────────────────────────────────────
+      # Packed here, from the build that just passed, so npm gets exactly this.
+      - name: Pack npm tarball
+        if: inputs.release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .pack
+          if [ "${{ steps.detect.outputs.pm }}" = pnpm ]; then
+            pnpm pack --pack-destination .pack
+          else
+            npm pack --pack-destination .pack
+          fi
+          ls -l .pack
+
+      - name: Upload npm tarball
+        if: inputs.release
+        uses: actions/upload-artifact@v7
+        with:
+          name: npm-package
+          path: .pack/*.tgz
+          if-no-files-found: error
+          retention-days: 7

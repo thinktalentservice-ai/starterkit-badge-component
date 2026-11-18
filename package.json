@@ -3,6 +3,15 @@
   "version": "0.1.1",
   "description": "Obsidian design-system Badge — token-driven, CSS-styled, zero runtime dependencies.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thinktalentservice-ai/starterkit-badge-component.git"
+  },
+  "homepage": "https://github.com/thinktalentservice-ai/starterkit-badge-component#readme",
+  "bugs": {
+    "url": "https://github.com/thinktalentservice-ai/starterkit-badge-component/issues"
+  },
+  "packageManager": "pnpm@12.11.2",
   "type": "module",
   "sideEffects": [
     "*.css"

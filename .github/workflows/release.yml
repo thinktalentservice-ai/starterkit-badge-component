@@ -1,0 +1,161 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Release — runs when a GitHub Release is published.
+#
+#   pages-check ─┐
+#                ├─► build (ci.yml, release mode) ─┬─► deploy-pages   (only if Pages already enabled
+#                │                                 │                   AND a Storybook build exists)
+#                │                                 └─► publish-npm    (environment "npm-publish")
+#
+# Both deploy jobs `needs: build` → neither runs unless the build + tests pass.
+# No token is hard-coded: NPM_TOKEN lives as a secret on the "npm-publish"
+# environment (see .github/RELEASING.md).
+# ─────────────────────────────────────────────────────────────────────────────
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # Is GitHub Pages already set up for this repo? If not, the Pages deploy is skipped.
+  pages-check:
+    name: Check GitHub Pages
+    runs-on: ubuntu-latest
+    permissions:
+      pages: read
+    outputs:
+      enabled: ${{ steps.pages.outputs.enabled }}
+      build_type: ${{ steps.pages.outputs.build_type }}
+      branch: ${{ steps.pages.outputs.branch }}
+      path: ${{ steps.pages.outputs.path }}
+    steps:
+      - id: pages
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if info="$(gh api "repos/${GITHUB_REPOSITORY}/pages" 2>/dev/null)"; then
+            build_type="$(jq -r '.build_type // "legacy"' <<< "$info")"
+            branch="$(jq -r '.source.branch // empty' <<< "$info")"
+            path="$(jq -r '.source.path // "/"' <<< "$info")"
+            echo "enabled=true"            >> "$GITHUB_OUTPUT"
+            echo "build_type=$build_type"  >> "$GITHUB_OUTPUT"
+            echo "branch=$branch"          >> "$GITHUB_OUTPUT"
+            echo "path=${path#/}"          >> "$GITHUB_OUTPUT"
+            echo "GitHub Pages is enabled (source: $build_type ${branch:+branch $branch$path})"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is not enabled for this repo — Storybook deploy will be skipped."
+          fi
+
+  build:
+    name: Build
+    needs: pages-check
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+    with:
+      release: true
+      storybook: ${{ needs.pages-check.outputs.enabled == 'true' }}
+
+  # ── GitHub Pages: source = "GitHub Actions" ───────────────────────────────
+  deploy-pages:
+    name: Deploy Storybook to GitHub Pages
+    needs: [pages-check, build]
+    if: >-
+      needs.pages-check.outputs.enabled == 'true' &&
+      needs.pages-check.outputs.build_type == 'workflow' &&
+      needs.build.outputs.has-storybook == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: storybook-static
+          path: storybook-static
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: storybook-static
+      - id: deploy
+        uses: actions/deploy-pages@v5
+
+  # ── GitHub Pages: source = "Deploy from a branch" (e.g. gh-pages) ─────────
+  deploy-pages-branch:
+    name: Deploy Storybook to Pages branch
+    needs: [pages-check, build]
+    if: >-
+      needs.pages-check.outputs.enabled == 'true' &&
+      needs.pages-check.outputs.build_type == 'legacy' &&
+      needs.pages-check.outputs.branch != '' &&
+      needs.pages-check.outputs.branch != github.event.repository.default_branch &&
+      needs.build.outputs.has-storybook == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: storybook-static
+          path: storybook-static
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ github.token }}
+          publish_branch: ${{ needs.pages-check.outputs.branch }}
+          publish_dir: storybook-static
+          destination_dir: ${{ needs.pages-check.outputs.path }}
+          commit_message: "docs: Storybook for ${{ github.event.release.tag_name }}"
+
+  # ── npm ───────────────────────────────────────────────────────────────────
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance
+    environment:
+      name: npm-publish
+      url: https://www.npmjs.com/package/${{ needs.build.outputs.package-name }}/v/${{ needs.build.outputs.package-version }}
+    steps:
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: npm-package
+          path: pkg
+
+      - name: Publish
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NAME: ${{ needs.build.outputs.package-name }}
+          VERSION: ${{ needs.build.outputs.package-version }}
+          DIST_TAG: ${{ github.event.release.prerelease && 'next' || 'latest' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN secret is missing on the 'npm-publish' environment."
+            exit 1
+          fi
+          if npm view "${NAME}@${VERSION}" version > /dev/null 2>&1; then
+            echo "::notice::${NAME}@${VERSION} is already on npm — nothing to publish."
+            exit 0
+          fi
+          npm publish pkg/*.tgz --access public --provenance --tag "$DIST_TAG"
+          echo "::notice::Published ${NAME}@${VERSION} (dist-tag: ${DIST_TAG})"
