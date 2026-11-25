@@ -223,7 +223,7 @@
   color: var(--ibd-ink);
   font-family: var(--ibd-t-font-body);
   font-size: var(--ibd-fs);
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.25;
   /* Explicit, not inherited: `uppercase={false}` (the default) must mean
      "not uppercase" even inside a host container that sets text-transform

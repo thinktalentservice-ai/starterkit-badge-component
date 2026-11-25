@@ -1,6 +1,6 @@
 {
   "name": "@devopsnext/starterkit-badge-component",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Obsidian design-system Badge — token-driven, CSS-styled, zero runtime dependencies.",
   "license": "MIT",
   "repository": {
