@@ -3,6 +3,8 @@
 Obsidian design-system **Badge** — a status / label pill. Token-driven, styled entirely in CSS,
 zero runtime dependencies, React as a peer.
 
+**Storybook:** https://thinktalentservice-ai.github.io/starterkit-badge-component/ (Think / Elemetrik brand toggle, light / dark).
+
 ```bash
 pnpm add @devopsnext/starterkit-badge-component@<exact-version>   # pin exact, never a caret
 ```
@@ -80,7 +82,10 @@ interactive. Domain compositions such as `StatusBadge` and `RoleBadge` belong in
 ## Develop
 
 ```bash
-pnpm verify          # sync:tokens:check, typecheck, test, build
+pnpm verify          # sync:tokens:check, gen:brands:check, typecheck, test, build
+pnpm storybook       # workshop on http://localhost:6006
+pnpm build-storybook # static site -> storybook-static/
+pnpm gen:brands      # regenerate .storybook/brands.generated.css
 ```
 
 The theme is installed from a packed tarball (`file:../starterkit-theme/…-1.5.0.tgz`) until it is

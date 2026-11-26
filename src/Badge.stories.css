@@ -1,0 +1,236 @@
+/* Story chrome — the frame around the specimens, not the specimens. It follows
+   the Scheme toolbar through these variables so the workshop reads as one
+   surface; the badges themselves flip via the package's own tokens. Light is
+   the unqualified default, matching the sibling component workshops. */
+
+.ibd-story {
+  --story-ink: #1a1d2e;
+  --story-title: #12141f;
+  --story-ink-2: #20243a;
+  --story-body: #626984;
+  --story-muted: #515875;
+  --story-desc: #6b7188;
+  --story-eyebrow: #004d83;
+  --story-line: rgb(22 25 37 / 0.12);
+  --story-chip-bg: rgb(255 255 255 / 0.72);
+  --story-chip-line: rgb(22 25 37 / 0.1);
+  --story-badge-bg: rgb(255 255 255 / 0.7);
+
+  width: 100%;
+  color: var(--story-ink);
+  font-family: var(--font-body, "Plus Jakarta Sans", sans-serif);
+}
+
+[data-theme="dark"] .ibd-story {
+  --story-ink: #f0f2ff;
+  --story-title: #f0f2ff;
+  --story-ink-2: rgb(240 242 255 / 0.92);
+  --story-body: rgb(240 242 255 / 0.58);
+  --story-muted: rgb(240 242 255 / 0.62);
+  --story-desc: rgb(240 242 255 / 0.55);
+  --story-eyebrow: var(--primary-text, #40aaff);
+  --story-line: rgb(255 255 255 / 0.1);
+  --story-chip-bg: rgb(255 255 255 / 0.06);
+  --story-chip-line: rgb(255 255 255 / 0.12);
+  --story-badge-bg: rgb(255 255 255 / 0.06);
+}
+
+.ibd-story__hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem 3rem;
+  align-items: end;
+  padding: 1.35rem 0 2rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--story-line);
+}
+
+.ibd-story__hero::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 3.5rem;
+  height: 0.22rem;
+  content: "";
+  background: linear-gradient(90deg, var(--primary, #0099ff) 70%, var(--accent, #d0e28c) 70%);
+  border-radius: 999px;
+}
+
+.ibd-story__eyebrow {
+  margin: 0 0 0.6rem;
+  color: var(--story-eyebrow);
+  font: 700 0.67rem/1 var(--font-mono, ui-monospace, monospace);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.ibd-story__title {
+  margin: 0;
+  color: var(--story-title);
+  font: 600 clamp(1.65rem, 4vw, 2.8rem) / 1.02 var(--font-heading, "Outfit", sans-serif);
+  letter-spacing: -0.04em;
+}
+
+.ibd-story__lede {
+  max-width: 44rem;
+  margin: 0.65rem 0 0;
+  color: var(--story-body);
+  font-size: 0.88rem;
+  line-height: 1.65;
+}
+
+.ibd-story__axes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  max-width: 17rem;
+  padding-bottom: 0.2rem;
+}
+
+.ibd-story__axes span {
+  padding: 0.38rem 0.56rem;
+  color: var(--story-muted);
+  font: 600 0.64rem/1 var(--font-mono, ui-monospace, monospace);
+  background: var(--story-chip-bg);
+  border: 1px solid var(--story-chip-line);
+  border-radius: 999px;
+}
+
+.ibd-story__body {
+  display: grid;
+  gap: 2.4rem;
+  counter-reset: specimen-section;
+}
+
+.ibd-story-section {
+  display: grid;
+  gap: 0.85rem;
+  counter-increment: specimen-section;
+}
+
+.ibd-story-section__header {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.7rem;
+  align-items: start;
+}
+
+.ibd-story-section__header::before {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  color: var(--story-muted);
+  font: 700 0.6rem/1 var(--font-mono, ui-monospace, monospace);
+  content: counter(specimen-section, decimal-leading-zero);
+  background: var(--story-badge-bg);
+  border: 1px solid var(--story-chip-line);
+  border-radius: 50%;
+}
+
+.ibd-story-section__title {
+  margin: 0;
+  color: var(--story-ink-2);
+  font: 650 0.94rem/1.35 var(--font-heading, "Outfit", sans-serif);
+  letter-spacing: -0.01em;
+  text-transform: capitalize;
+}
+
+.ibd-story-section__description {
+  margin: 0.2rem 0 0;
+  color: var(--story-desc);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.ibd-story-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(18rem, 100%), 1fr));
+  gap: 0.85rem;
+  min-width: 0;
+}
+
+@media (max-width: 680px) {
+  .ibd-story__hero {
+    grid-template-columns: 1fr;
+  }
+
+  .ibd-story__axes {
+    justify-content: flex-start;
+  }
+}
+
+/* ── Brand comparison ──────────────────────────────────────────────────────
+   Two columns, each scoped to one [data-brand] preset. Everything in here is
+   painted from the BRAND'S OWN tokens rather than the --story-* chrome above:
+   the surface, the hairline, the label ink, the dot. That is the point — a
+   column that borrowed the workshop's chrome would show the badge colours
+   changing on a backdrop that never does, which reads as a theming bug rather
+   than as two complete brands.
+
+   Every var() keeps a Think-valued fallback, so the columns still render if the
+   generated brand sheet is ever missing. Below 52rem they stack; side by side
+   is better, but not at the price of a horizontal scrollbar. */
+
+.ibd-story-brands {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(26rem, 100%), 1fr));
+  gap: 1rem;
+  min-width: 0;
+}
+
+.ibd-story-brand {
+  display: grid;
+  gap: 1rem;
+  padding: 1.1rem;
+  min-width: 0;
+  border: 1px solid var(--border, rgb(22 25 37 / 0.12));
+  border-radius: var(--radius-card, 20px);
+  background: var(--card, #ffffff);
+  color: var(--fg1, #1a1d2e);
+}
+
+.ibd-story-brand__label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-family: var(--font-heading, "Outfit", sans-serif);
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* The brand's --primary rendered as itself. Two brands whose names sit next to
+   each other need a colour cue that is not one of the specimens. */
+.ibd-story-brand__dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--primary, #0099ff);
+  box-shadow: 0 0 0 3px rgb(var(--primary-channel, 0 153 255) / 0.18);
+}
+
+.ibd-story-brand__row {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ibd-story-brand__fill {
+  font-family: var(--font-mono, "Geist Mono", monospace);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: var(--fg-muted, #6b7188);
+}
+
+/* Tighter than the default specimen grid: these cells hold a bare badge, not
+   a badge plus its code panel, so 18rem of minimum width would leave one tone
+   per row on a laptop and defeat the comparison. */
+.ibd-story-brand .ibd-story-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(7.5rem, 100%), 1fr));
+  gap: 0.5rem;
+}

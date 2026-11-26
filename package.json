@@ -7,7 +7,7 @@
     "type": "git",
     "url": "git+https://github.com/thinktalentservice-ai/starterkit-badge-component.git"
   },
-  "homepage": "https://github.com/thinktalentservice-ai/starterkit-badge-component#readme",
+  "homepage": "https://thinktalentservice-ai.github.io/starterkit-badge-component/",
   "bugs": {
     "url": "https://github.com/thinktalentservice-ai/starterkit-badge-component/issues"
   },
@@ -37,13 +37,17 @@
   },
   "scripts": {
     "build": "tsc --noEmit && tsup",
+    "build-storybook": "storybook build -o storybook-static --disable-telemetry",
     "dev": "tsup --watch",
+    "storybook": "storybook dev -p 6006 --no-open --disable-telemetry",
     "sync:tokens": "node scripts/sync-tokens.mjs",
     "sync:tokens:check": "node scripts/sync-tokens.mjs --check",
+    "gen:brands": "node scripts/gen-brands.mjs",
+    "gen:brands:check": "node scripts/gen-brands.mjs --check",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "pnpm sync:tokens:check && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm sync:tokens:check && pnpm gen:brands:check && pnpm typecheck && pnpm test && pnpm build"
   },
   "peerDependencies": {
     "react": ">=18",
@@ -51,6 +55,9 @@
   },
   "devDependencies": {
     "@devopsnext/starterkit-theme": "1.5.0",
+    "@storybook/addon-a11y": "^10.6.9",
+    "@storybook/addon-docs": "^10.6.9",
+    "@storybook/react-vite": "^10.6.9",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -61,8 +68,10 @@
     "jsdom": "^26.1.0",
     "react": "19.2.6",
     "react-dom": "19.2.6",
+    "storybook": "^10.6.9",
     "tsup": "^8.5.0",
     "typescript": "^5.9.2",
+    "vite": "^8.3.8",
     "vitest": "^3.2.4"
   },
   "engines": {
