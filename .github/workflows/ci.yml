@@ -26,14 +26,7 @@ on:
         description: "Release mode: check tag == package.json version, pack the npm tarball, upload it"
         type: boolean
         default: false
-      storybook:
-        description: "Also build Storybook (if the project has a Storybook build script) and upload it"
-        type: boolean
-        default: false
     outputs:
-      has-storybook:
-        description: "'true' when a Storybook build was produced and uploaded"
-        value: ${{ jobs.build.outputs.has_storybook }}
       package-name:
         value: ${{ jobs.build.outputs.package_name }}
       package-version:
@@ -55,7 +48,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     outputs:
-      has_storybook: ${{ steps.storybook.outputs.built }}
       package_name: ${{ steps.detect.outputs.name }}
       package_version: ${{ steps.detect.outputs.version }}
 
@@ -143,41 +135,16 @@ jobs:
             fi
           fi
 
-      # ── Storybook (release → GitHub Pages) ─────────────────────────────────
+      # Compile check only — pages.yml does the publishing.
       - name: Build Storybook
-        id: storybook
-        if: inputs.storybook
         shell: bash
         env:
           PM: ${{ steps.detect.outputs.pm }}
         run: |
           set -euo pipefail
-          script=""
-          for s in build-storybook storybook:build build:storybook; do
-            if jq -e --arg s "$s" '.scripts[$s] // empty' package.json > /dev/null; then script="$s"; break; fi
-          done
-          if [ -z "$script" ]; then
-            echo "::warning::GitHub Pages is enabled but package.json has no Storybook build script (build-storybook / storybook:build / build:storybook). Skipping Pages deploy."
-            echo "built=false" >> "$GITHUB_OUTPUT"; exit 0
+          if jq -e '.scripts["build-storybook"] // empty' package.json > /dev/null; then
+            "$PM" run build-storybook
           fi
-          # Output dir: honour -o / --output-dir in the script, default storybook-static
-          cmd="$(jq -r --arg s "$script" '.scripts[$s]' package.json)"
-          out="$(sed -nE 's/.*(-o|--output-dir)[ =]+([^ ]+).*/\2/p' <<< "$cmd")"
-          out="${out:-storybook-static}"
-          echo "▶ $PM run $script  (output: $out)"
-          "$PM" run "$script"
-          [ -f "$out/index.html" ] || { echo "::error::Storybook output '$out/index.html' not found"; exit 1; }
-          echo "dir=$out"   >> "$GITHUB_OUTPUT"
-          echo "built=true" >> "$GITHUB_OUTPUT"
-
-      - name: Upload Storybook
-        if: inputs.storybook && steps.storybook.outputs.built == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: storybook-static
-          path: ${{ steps.storybook.outputs.dir }}
-          include-hidden-files: true
-          retention-days: 7
 
       # ── npm tarball (release → npm) ────────────────────────────────────────
       # Packed here, from the build that just passed, so npm gets exactly this.

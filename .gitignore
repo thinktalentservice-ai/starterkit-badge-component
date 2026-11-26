@@ -151,3 +151,6 @@ vite.config.ts.timestamp-*
 # local
 .idea/
 *.tgz
+
+# Storybook build output
+storybook-static/

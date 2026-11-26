@@ -1,0 +1,74 @@
+/* The canvas follows the Scheme toolbar. `[data-scheme]` is written to <html>
+ * by the preview decorator. Light is the unqualified default so this workshop
+ * opens looking like the sibling component workshops; dark is the override. */
+
+:root {
+  color-scheme: light;
+  font-family: var(--font-body, "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif);
+}
+
+:root[data-scheme="dark"] {
+  color-scheme: dark;
+}
+
+/* The two blooms read the ACTIVE brand's tokens, so the canvas moves with the
+   brand toolbar instead of staying pinned to Think's lime and blue. The literal
+   fallbacks are the previous hard-coded values, which are Think's — so a page
+   rendered before brands.generated.css lands (or with no data-brand at all)
+   looks exactly as it did.
+
+   These resolve because the decorator writes data-brand to <html>, which is
+   where [data-brand="..."] matches, and custom properties inherit down to body.
+   Alpha stays literal: --*-channel is an `R G B` triple precisely so the
+   consumer picks its own opacity. */
+body {
+  margin: 0;
+  background:
+    linear-gradient(rgb(22 25 37 / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(22 25 37 / 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 8% 2%, rgb(var(--accent-channel, 179 211 53) / 0.13), transparent 27rem),
+    radial-gradient(circle at 92% 0%, rgb(var(--primary-channel, 0 138 255) / 0.09), transparent 24rem),
+    #f6f7f3;
+  background-size:
+    4rem 4rem,
+    4rem 4rem,
+    auto,
+    auto,
+    auto;
+}
+
+/* Grid rule + two brand blooms over the void surface — the page the buttons in
+   the design system actually sit on. */
+:root[data-scheme="dark"] body {
+  background:
+    linear-gradient(rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.028) 1px, transparent 1px),
+    radial-gradient(circle at 8% 2%, rgb(var(--accent-channel, 179 211 53) / 0.1), transparent 27rem),
+    radial-gradient(circle at 92% 0%, rgb(var(--primary-channel, 0 138 255) / 0.12), transparent 24rem),
+    #0d0f1a;
+  background-size:
+    4rem 4rem,
+    4rem 4rem,
+    auto,
+    auto,
+    auto;
+}
+
+.sb-show-main.sb-main-padded {
+  padding: clamp(1rem, 4vw, 3rem);
+}
+
+/* Autodocs paints its own block background behind every story, so it has to
+   follow the toolbar too — otherwise the story block stays a slab of the other
+   scheme inside the docs page. */
+.docs-story {
+  background: #f6f7f3;
+}
+
+:root[data-scheme="dark"] .docs-story {
+  background: #0d0f1a;
+}
+
+.sbdocs-wrapper .sbdocs-content {
+  max-width: none;
+}

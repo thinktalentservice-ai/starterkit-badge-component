@@ -1,0 +1,60 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Pages — publishes Storybook to GitHub Pages.
+#
+#  • push to main        → verify + build Storybook → deploy
+#  • workflow_dispatch   → same, on demand (main only)
+#
+# This is the ONLY Pages deploy path: the `github-pages` environment allows the
+# `main` branch alone, so a deploy from a release tag would be rejected.
+# Requires Settings → Pages → Source: "GitHub Actions".
+# ─────────────────────────────────────────────────────────────────────────────
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Never cancel a deploy half way; a newer run waits its turn.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Storybook
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      # Version comes from package.json "packageManager".
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Nothing is published that does not pass the same gate as CI.
+      - run: pnpm verify
+      - run: pnpm build-storybook
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: storybook-static
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v5

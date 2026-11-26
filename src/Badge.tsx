@@ -3,7 +3,7 @@ import type { ForwardedRef, HTMLAttributes, ReactNode } from "react";
 import { resolveAxes } from "./axes";
 import type { BadgeFill, BadgePreset, BadgeShape, BadgeSize, BadgeTone } from "./axes";
 
-interface BadgeOwnProps {
+export interface BadgeOwnProps {
   /** Colour identity. Default `neutral`. */
   tone?: BadgeTone;
   /** How the identity is applied. Default `soft`. */
